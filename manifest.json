@@ -1,6 +1,6 @@
 {
   "name": "Quản Lý Doanh Thu",
-  "short_name": "DoanhThu",
+  "short_name": "PNL",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f3f4f6",
