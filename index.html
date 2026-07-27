@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Quản Lý Doanh Thu</title>
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10,26 +10,51 @@
   <meta name="apple-mobile-web-app-title" content="DoanhThu">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2382/2382533.png">
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Chống phóng to/thu nhỏ trên Safari iOS */
+    body {
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    input, textarea {
+      -webkit-user-select: auto;
+      user-select: auto;
+    }
+    #pullIndicator {
+      transition: opacity 0.2s, transform 0.2s;
+    }
+  </style>
 </head>
 <body class="bg-gray-100 min-h-screen text-gray-800 p-4 pb-20">
 
+  <div id="pullIndicator" class="fixed top-2 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs px-3 py-1.5 rounded-full shadow-lg opacity-0 pointer-events-none z-50 flex items-center gap-1">
+    <span>🔄</span> <span id="pullText">Kéo xuống để tải lại...</span>
+  </div>
+
   <div class="flex justify-between items-center mb-4 pt-2">
-    <h1 class="text-xl font-bold text-gray-900">Dòng Tiền Dự Kiến</h1>
-    <button onclick="openModal()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium shadow">+ Thêm mới</button>
+    <div class="flex items-center gap-2">
+      <h1 class="text-xl font-bold text-gray-900">Dòng Tiền Dự Kiến</h1>
+      <span id="syncStatus" class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" title="Đồng bộ tự động"></span>
+    </div>
+    <div class="flex gap-2">
+      <button onclick="loadData()" class="bg-white border border-gray-200 text-gray-700 px-2.5 py-1.5 rounded-lg text-sm font-medium shadow-sm active:scale-95">🔄</button>
+      <button onclick="openModal()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium shadow active:scale-95">+ Thêm mới</button>
+    </div>
   </div>
 
   <div class="grid grid-cols-3 gap-2 mb-4">
-    <div class="bg-white p-3 rounded-xl shadow border border-gray-100 text-center">
+    <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 text-center">
       <p class="text-xs text-gray-500 font-medium">Tổng Dự Kiến</p>
-      <p id="totalExpected" class="text-sm font-bold text-blue-600 mt-1">0 đ</p>
+      <p id="totalExpected" class="text-xs sm:text-sm font-bold text-blue-600 mt-1">0 đ</p>
     </div>
-    <div class="bg-white p-3 rounded-xl shadow border border-gray-100 text-center">
+    <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 text-center">
       <p class="text-xs text-gray-500 font-medium">Lũy Kế Đã Thu</p>
-      <p id="totalCollected" class="text-sm font-bold text-green-600 mt-1">0 đ</p>
+      <p id="totalCollected" class="text-xs sm:text-sm font-bold text-green-600 mt-1">0 đ</p>
     </div>
-    <div class="bg-white p-3 rounded-xl shadow border border-gray-100 text-center">
+    <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 text-center">
       <p class="text-xs text-gray-500 font-medium">Còn Phải Thu</p>
-      <p id="totalRemaining" class="text-sm font-bold text-red-500 mt-1">0 đ</p>
+      <p id="totalRemaining" class="text-xs sm:text-sm font-bold text-red-500 mt-1">0 đ</p>
     </div>
   </div>
 
@@ -40,11 +65,13 @@
   <div id="addModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl p-5 w-full max-w-sm space-y-3">
       <h3 class="text-lg font-bold">Thêm Khoản Thu Mới</h3>
-      <input id="inpKhachHang" type="text" placeholder="Tên khách hàng / Dự án" class="w-full border rounded-lg p-2 text-sm">
-      <input id="inpTong" type="number" placeholder="Tổng doanh thu dự kiến (VNĐ)" class="w-full border rounded-lg p-2 text-sm">
-      <input id="inpDaThu" type="number" placeholder="Đã thu trước (VNĐ) - Nếu có" class="w-full border rounded-lg p-2 text-sm">
-      <input id="inpNgay" type="date" class="w-full border rounded-lg p-2 text-sm">
-      <input id="inpGhiChu" type="text" placeholder="Ghi chú" class="w-full border rounded-lg p-2 text-sm">
+      <input id="inpKhachHang" type="text" placeholder="Tên khách hàng / Dự án" class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      
+      <input id="inpTong" type="text" inputmode="numeric" oninput="formatInputMoney(this)" placeholder="Tổng doanh thu dự kiến (VNĐ)" class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <input id="inpDaThu" type="text" inputmode="numeric" oninput="formatInputMoney(this)" placeholder="Đã thu trước (VNĐ) - Nếu có" class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      
+      <input id="inpNgay" type="date" class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <input id="inpGhiChu" type="text" placeholder="Ghi chú" class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
       <div class="flex justify-end space-x-2 pt-2">
         <button onclick="closeModal()" class="px-4 py-2 text-sm text-gray-500">Hủy</button>
         <button onclick="submitNew()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg">Lưu</button>
@@ -60,11 +87,36 @@
       navigator.serviceWorker.register('sw.js');
     }
 
+    // Định dạng hiển thị số tiền có dấu phẩy ','
     function formatVND(num) {
-      return (Number(num) || 0).toLocaleString('vi-VN') + ' đ';
+      if (isNaN(num) || num === null || num === undefined) return '0 đ';
+      return Number(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + ' đ';
     }
 
-    async function loadData() {
+    // Tự động định dạng dấu phẩy ',' ngay khi gõ trong ô Input
+    function formatInputMoney(input) {
+      let value = input.value.replace(/,/g, '').replace(/\D/g, '');
+      if (value) {
+        input.value = Number(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      } else {
+        input.value = '';
+      }
+    }
+
+    // Chuyển chuỗi có dấu phẩy ',' thành số nguyên thuần túy để lưu vào database
+    function parseMoneyValue(str) {
+      if (!str) return 0;
+      return Number(str.toString().replace(/,/g, '')) || 0;
+    }
+
+    let isFetching = false;
+
+    async function loadData(isBackground = false) {
+      if (isFetching) return;
+      isFetching = true;
+
+      const syncDot = document.getElementById('syncStatus');
+
       try {
         const res = await fetch(API_URL);
         const data = await res.json();
@@ -89,17 +141,17 @@
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
               <div class="flex justify-between items-start mb-2">
                 <div>
-                  <h4 class="font-bold text-gray-900">${item.KhachHang}</h4>
+                  <h4 class="font-bold text-gray-900">${item.KhachHang || 'Chưa đặt tên'}</h4>
                   <p class="text-xs text-gray-400">Hạn thu: ${item.NgayDuKien || 'Chưa lịch'}</p>
                 </div>
-                <span class="text-xs px-2 py-1 rounded-full font-medium ${badgeColor}">${item.TrangThai}</span>
+                <span class="text-xs px-2 py-1 rounded-full font-medium ${badgeColor}">${item.TrangThai || 'Chờ thu'}</span>
               </div>
               <div class="grid grid-cols-3 gap-1 text-xs bg-gray-50 p-2 rounded-lg my-2">
                 <div><span class="text-gray-400 block">Tổng:</span> <b>${formatVND(tong)}</b></div>
                 <div><span class="text-gray-400 block">Đã thu:</span> <b class="text-green-600">${formatVND(dathu)}</b></div>
                 <div><span class="text-gray-400 block">Còn lại:</span> <b class="text-red-500">${formatVND(conlai)}</b></div>
               </div>
-              <button onclick="updateCollected('${item.ID}', ${dathu})" class="w-full text-center text-xs text-blue-600 py-1 font-medium hover:bg-blue-50 rounded mt-1 border border-blue-100">
+              <button onclick="updateCollected('${item.ID}', ${dathu})" class="w-full text-center text-xs text-blue-600 py-1.5 font-medium hover:bg-blue-50 rounded-lg mt-1 border border-blue-100">
                 ✏️ Cập nhật số tiền lũy kế đã thu
               </button>
             </div>
@@ -110,20 +162,35 @@
         document.getElementById('totalCollected').innerText = formatVND(sumCollected);
         document.getElementById('totalRemaining').innerText = formatVND(sumRemaining);
         document.getElementById('listContainer').innerHTML = html || '<p class="text-center text-gray-400 py-6">Chưa có dữ liệu</p>';
+        
+        if (syncDot) syncDot.className = 'w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse';
       } catch (err) {
-        document.getElementById('listContainer').innerHTML = '<p class="text-center text-red-500 py-6">Lỗi tải dữ liệu. Vui lòng kiểm tra lại URL API!</p>';
+        if (!isBackground) {
+          document.getElementById('listContainer').innerHTML = '<p class="text-center text-red-500 py-6">Lỗi tải dữ liệu. Vui lòng kiểm tra lại kết nối!</p>';
+        }
+        if (syncDot) syncDot.className = 'w-2.5 h-2.5 rounded-full bg-red-500';
+      } finally {
+        isFetching = false;
       }
     }
 
     function openModal() { document.getElementById('addModal').classList.remove('hidden'); document.getElementById('addModal').classList.add('flex'); }
-    function closeModal() { document.getElementById('addModal').classList.add('hidden'); document.getElementById('addModal').classList.remove('flex'); }
+    function closeModal() { 
+      document.getElementById('addModal').classList.add('hidden'); 
+      document.getElementById('addModal').classList.remove('flex');
+      document.getElementById('inpKhachHang').value = '';
+      document.getElementById('inpTong').value = '';
+      document.getElementById('inpDaThu').value = '';
+      document.getElementById('inpNgay').value = '';
+      document.getElementById('inpGhiChu').value = '';
+    }
 
     async function submitNew() {
       const payload = {
         action: 'add',
         KhachHang: document.getElementById('inpKhachHang').value,
-        TongDoanhThu: document.getElementById('inpTong').value,
-        DaThu: document.getElementById('inpDaThu').value,
+        TongDoanhThu: parseMoneyValue(document.getElementById('inpTong').value),
+        DaThu: parseMoneyValue(document.getElementById('inpDaThu').value),
         NgayDuKien: document.getElementById('inpNgay').value,
         GhiChu: document.getElementById('inpGhiChu').value
       };
@@ -134,8 +201,10 @@
     }
 
     async function updateCollected(id, currentDaThu) {
-      const newVal = prompt("Nhập tổng số tiền LŨY KẾ ĐÃ THU từ khách hàng này (VNĐ):", currentDaThu);
-      if (newVal !== null) {
+      const formattedCurrent = Number(currentDaThu).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+      const newValStr = prompt("Nhập tổng số tiền LŨY KẾ ĐÃ THU từ khách hàng này (VNĐ):", formattedCurrent);
+      if (newValStr !== null) {
+        const newVal = parseMoneyValue(newValStr);
         document.getElementById('listContainer').innerHTML = '<p class="text-center text-gray-400 py-6">Đang cập nhật...</p>';
         await fetch(API_URL, {
           method: 'POST',
@@ -145,6 +214,55 @@
       }
     }
 
+    // TỰ ĐỘNG ĐỒNG BỘ 2 CHIỀU MỖI 5 GIÂY (CHẠY NGẦM)
+    setInterval(() => {
+      loadData(true);
+    }, 5000);
+
+    // BỘ XỬ LÝ SỰ KIỆN VUỐT XUỐNG ĐỂ TẢI LẠI (PULL-TO-REFRESH CỦA IOS)
+    let startY = 0;
+    let pullDistance = 0;
+    const pullIndicator = document.getElementById('pullIndicator');
+    const pullText = document.getElementById('pullText');
+
+    window.addEventListener('touchstart', (e) => {
+      if (window.scrollY === 0) {
+        startY = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      if (startY > 0 && window.scrollY === 0) {
+        const currentY = e.touches[0].clientY;
+        pullDistance = currentY - startY;
+        if (pullDistance > 0) {
+          const opacity = Math.min(pullDistance / 80, 1);
+          pullIndicator.style.opacity = opacity;
+          if (pullDistance > 80) {
+            pullText.innerText = "Thả ra để làm mới!";
+          } else {
+            pullText.innerText = "Kéo xuống để tải lại...";
+          }
+        }
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchend', () => {
+      if (pullDistance > 80) {
+        pullText.innerText = "Đang tải lại...";
+        loadData().then(() => {
+          setTimeout(() => {
+            pullIndicator.style.opacity = '0';
+          }, 400);
+        });
+      } else {
+        pullIndicator.style.opacity = '0';
+      }
+      startY = 0;
+      pullDistance = 0;
+    });
+
+    // Tải dữ liệu ban đầu
     loadData();
   </script>
 </body>
