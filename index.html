@@ -22,6 +22,7 @@
     <span>🔄</span> <span id="pullText">Kéo xuống để tải lại...</span>
   </div>
 
+  <!-- Header -->
   <div class="flex justify-between items-center mb-4 pt-2">
     <div class="flex items-center gap-2">
       <h1 class="text-xl font-bold text-gray-900">Dòng Tiền Dự Kiến</h1>
@@ -33,6 +34,7 @@
     </div>
   </div>
 
+  <!-- Dashboard Summary Cards -->
   <div class="grid grid-cols-3 gap-2 mb-4">
     <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 text-center">
       <p class="text-[11px] text-gray-500 font-medium">Tổng Dự Kiến</p>
@@ -48,6 +50,15 @@
     </div>
   </div>
 
+  <!-- Thanh tìm kiếm -->
+  <div class="mb-4 relative">
+    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+      <span class="text-gray-400">🔍</span>
+    </div>
+    <input id="searchInput" type="text" oninput="filterList()" placeholder="Tìm kiếm tên khách hàng, dự án..." class="w-full bg-white border border-gray-200 rounded-xl py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all">
+  </div>
+
+  <!-- Danh sách giao dịch -->
   <div class="space-y-3" id="listContainer">
     <p class="text-center text-gray-400 py-6">Đang tải dữ liệu...</p>
   </div>
@@ -76,8 +87,8 @@
 
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 
-    let appData = []; // Biến toàn cục lưu dữ liệu
-    let currentEditId = null; // Biến xác định trạng thái Thêm hay Sửa
+    let appData = []; 
+    let currentEditId = null; 
     let isFetching = false;
 
     function formatVND(num) {
@@ -101,6 +112,73 @@
       return Number(str.toString().replace(/,/g, '')) || 0;
     }
 
+    // Tách hàm Render HTML riêng để phục vụ cho việc Lọc (Search)
+    function renderList(dataToRender) {
+      let html = '';
+      
+      if (dataToRender.length === 0) {
+        document.getElementById('listContainer').innerHTML = '<p class="text-center text-gray-400 py-6">Không tìm thấy dữ liệu</p>';
+        return;
+      }
+
+      dataToRender.forEach(item => {
+        const tong = Number(item.TongDoanhThu) || 0;
+        const dathu = Number(item.DaThu) || 0;
+        const conlai = tong - dathu;
+
+        let badgeColor = 'bg-yellow-100 text-yellow-800';
+        if (conlai <= 0) badgeColor = 'bg-green-100 text-green-800';
+        else if (dathu > 0) badgeColor = 'bg-blue-100 text-blue-800';
+
+        html += `
+          <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex justify-between items-start mb-2">
+              <div class="pr-2">
+                <h4 class="font-bold text-gray-900 truncate">${item.KhachHang || 'Chưa đặt tên'}</h4>
+                <p class="text-xs text-gray-400 mt-0.5">Hạn thu: ${item.NgayDuKien || 'Chưa có'}</p>
+              </div>
+              <span class="text-[10px] whitespace-nowrap px-2 py-1 rounded-full font-bold ${badgeColor}">${item.TrangThai || 'Chờ thu'}</span>
+            </div>
+            
+            <div class="grid grid-cols-3 gap-1 text-xs bg-gray-50 p-2 rounded-lg my-2 border border-gray-100">
+              <div><span class="text-gray-400 block text-[10px] uppercase">Tổng</span> <b class="text-gray-700">${formatVND(tong)}</b></div>
+              <div><span class="text-gray-400 block text-[10px] uppercase">Đã thu</span> <b class="text-green-600">${formatVND(dathu)}</b></div>
+              <div><span class="text-gray-400 block text-[10px] uppercase">Còn lại</span> <b class="text-red-500">${formatVND(conlai)}</b></div>
+            </div>
+            
+            <div class="flex gap-2 mt-2">
+              <button onclick="updateCollected('${item.ID}', ${dathu})" class="flex-1 text-center text-[11px] text-blue-600 py-2 font-bold hover:bg-blue-50 rounded-lg border border-blue-100 transition-colors">
+                ✏️ Nhập Cấp Tốc
+              </button>
+              <button onclick="openEditModal('${item.ID}')" class="flex-1 text-center text-[11px] text-gray-600 py-2 font-bold hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors">
+                ⚙️ Sửa Toàn Bộ
+              </button>
+            </div>
+          </div>
+        `;
+      });
+
+      document.getElementById('listContainer').innerHTML = html;
+    }
+
+    // Hàm Lọc dữ liệu theo tên Khách Hàng
+    function filterList() {
+      const searchText = document.getElementById('searchInput').value.toLowerCase().trim();
+      
+      if (!searchText) {
+        renderList(appData); // Nếu không gõ gì thì hiện tất cả
+        return;
+      }
+
+      const filteredData = appData.filter(item => {
+        const tenKhachHang = (item.KhachHang || '').toLowerCase();
+        return tenKhachHang.includes(searchText);
+      });
+
+      renderList(filteredData);
+    }
+
+    // Hàm Tải Dữ Liệu từ Server
     async function loadData(isBackground = false) {
       if (isFetching) return;
       isFetching = true;
@@ -109,56 +187,25 @@
       try {
         const res = await fetch(API_URL);
         const data = await res.json();
-        appData = data; // Lưu dữ liệu vào biến toàn cục để dùng cho tính năng Sửa
+        appData = data; 
         
         let sumExpected = 0, sumCollected = 0, sumRemaining = 0;
-        let html = '';
 
+        // Luôn tính toán Tổng (Dashboard) dựa trên toàn bộ dữ liệu gốc
         data.forEach(item => {
           const tong = Number(item.TongDoanhThu) || 0;
           const dathu = Number(item.DaThu) || 0;
-          const conlai = tong - dathu;
-
           sumExpected += tong;
           sumCollected += dathu;
-          sumRemaining += conlai;
-
-          let badgeColor = 'bg-yellow-100 text-yellow-800';
-          if (conlai <= 0) badgeColor = 'bg-green-100 text-green-800';
-          else if (dathu > 0) badgeColor = 'bg-blue-100 text-blue-800';
-
-          html += `
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-              <div class="flex justify-between items-start mb-2">
-                <div class="pr-2">
-                  <h4 class="font-bold text-gray-900 truncate">${item.KhachHang || 'Chưa đặt tên'}</h4>
-                  <p class="text-xs text-gray-400 mt-0.5">Hạn thu: ${item.NgayDuKien || 'Chưa có'}</p>
-                </div>
-                <span class="text-[10px] whitespace-nowrap px-2 py-1 rounded-full font-bold ${badgeColor}">${item.TrangThai || 'Chờ thu'}</span>
-              </div>
-              
-              <div class="grid grid-cols-3 gap-1 text-xs bg-gray-50 p-2 rounded-lg my-2 border border-gray-100">
-                <div><span class="text-gray-400 block text-[10px] uppercase">Tổng</span> <b class="text-gray-700">${formatVND(tong)}</b></div>
-                <div><span class="text-gray-400 block text-[10px] uppercase">Đã thu</span> <b class="text-green-600">${formatVND(dathu)}</b></div>
-                <div><span class="text-gray-400 block text-[10px] uppercase">Còn lại</span> <b class="text-red-500">${formatVND(conlai)}</b></div>
-              </div>
-              
-              <div class="flex gap-2 mt-2">
-                <button onclick="updateCollected('${item.ID}', ${dathu})" class="flex-1 text-center text-[11px] text-blue-600 py-2 font-bold hover:bg-blue-50 rounded-lg border border-blue-100 transition-colors">
-                  ✏️ Nhập Cấp Tốc
-                </button>
-                <button onclick="openEditModal('${item.ID}')" class="flex-1 text-center text-[11px] text-gray-600 py-2 font-bold hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors">
-                  ⚙️ Sửa Toàn Bộ
-                </button>
-              </div>
-            </div>
-          `;
+          sumRemaining += (tong - dathu);
         });
 
         document.getElementById('totalExpected').innerText = formatVND(sumExpected);
         document.getElementById('totalCollected').innerText = formatVND(sumCollected);
         document.getElementById('totalRemaining').innerText = formatVND(sumRemaining);
-        document.getElementById('listContainer').innerHTML = html || '<p class="text-center text-gray-400 py-6">Chưa có dữ liệu</p>';
+        
+        // Gọi hàm lọc để hiển thị ra màn hình (đề phòng đang gõ dở tìm kiếm mà data tự update)
+        filterList();
         
         if (syncDot) syncDot.className = 'w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse';
       } catch (err) {
@@ -169,7 +216,6 @@
       }
     }
 
-    // Mở Form Thêm Mới
     function openAddModal() { 
       currentEditId = null;
       document.getElementById('modalTitle').innerText = 'Thêm Khoản Thu Mới';
@@ -177,7 +223,6 @@
       toggleModal(true);
     }
 
-    // Mở Form Sửa Thông Tin
     function openEditModal(id) {
       currentEditId = id;
       const item = appData.find(x => x.ID === id);
@@ -194,6 +239,7 @@
     }
 
     function closeModal() { toggleModal(false); }
+    
     function clearModalInputs() {
       document.getElementById('inpKhachHang').value = '';
       document.getElementById('inpTong').value = '';
@@ -201,13 +247,13 @@
       document.getElementById('inpNgay').value = '';
       document.getElementById('inpGhiChu').value = '';
     }
+
     function toggleModal(show) {
       const modal = document.getElementById('dataModal');
       if(show) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
       else { modal.classList.add('hidden'); modal.classList.remove('flex'); }
     }
 
-    // Gộp chung hàm Submit cho cả Thêm và Sửa
     async function submitData() {
       const payload = {
         action: currentEditId ? 'edit' : 'add',
@@ -220,6 +266,9 @@
       };
       
       closeModal();
+      // Xóa chữ trong ô tìm kiếm khi thêm mới/sửa xong để thấy giao dịch hiển thị trên cùng
+      document.getElementById('searchInput').value = ''; 
+
       document.getElementById('listContainer').innerHTML = '<p class="text-center text-gray-400 py-6">Đang lưu hệ thống...</p>';
       await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
       loadData();
