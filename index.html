@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Doanh Thu</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="DoanhThu">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2382/2382533.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen text-gray-800 p-4 pb-20">
+
+  <div class="flex justify-between items-center mb-4 pt-2">
+    <h1 class="text-xl font-bold text-gray-900">Dòng Tiền Dự Kiến</h1>
+    <button onclick="openModal()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium shadow">+ Thêm mới</button>
+  </div>
+
+  <div class="grid grid-cols-3 gap-2 mb-4">
+    <div class="bg-white p-3 rounded-xl shadow border border-gray-100 text-center">
+      <p class="text-xs text-gray-500 font-medium">Tổng Dự Kiến</p>
+      <p id="totalExpected" class="text-sm font-bold text-blue-600 mt-1">0 đ</p>
+    </div>
+    <div class="bg-white p-3 rounded-xl shadow border border-gray-100 text-center">
+      <p class="text-xs text-gray-500 font-medium">Lũy Kế Đã Thu</p>
+      <p id="totalCollected" class="text-sm font-bold text-green-600 mt-1">0 đ</p>
+    </div>
+    <div class="bg-white p-3 rounded-xl shadow border border-gray-100 text-center">
+      <p class="text-xs text-gray-500 font-medium">Còn Phải Thu</p>
+      <p id="totalRemaining" class="text-sm font-bold text-red-500 mt-1">0 đ</p>
+    </div>
+  </div>
+
+  <div class="space-y-3" id="listContainer">
+    <p class="text-center text-gray-400 py-6">Đang tải dữ liệu...</p>
+  </div>
+
+  <div id="addModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl p-5 w-full max-w-sm space-y-3">
+      <h3 class="text-lg font-bold">Thêm Khoản Thu Mới</h3>
+      <input id="inpKhachHang" type="text" placeholder="Tên khách hàng / Dự án" class="w-full border rounded-lg p-2 text-sm">
+      <input id="inpTong" type="number" placeholder="Tổng doanh thu dự kiến (VNĐ)" class="w-full border rounded-lg p-2 text-sm">
+      <input id="inpDaThu" type="number" placeholder="Đã thu trước (VNĐ) - Nếu có" class="w-full border rounded-lg p-2 text-sm">
+      <input id="inpNgay" type="date" class="w-full border rounded-lg p-2 text-sm">
+      <input id="inpGhiChu" type="text" placeholder="Ghi chú" class="w-full border rounded-lg p-2 text-sm">
+      <div class="flex justify-end space-x-2 pt-2">
+        <button onclick="closeModal()" class="px-4 py-2 text-sm text-gray-500">Hủy</button>
+        <button onclick="submitNew()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg">Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ⚠️ THAY THẾ DÒNG DƯỚI BẰNG URL APPS SCRIPT CỦA BẠN:
+    const API_URL = "https://script.google.com/macros/s/AKfycbwKP3dMqD78s4EpNjsP3xuCpe8ymDQ59GRxBZ-BfeybMrVejQFW5XKXhEFPjJWeCC-JCg/exec";
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+
+    function formatVND(num) {
+      return (Number(num) || 0).toLocaleString('vi-VN') + ' đ';
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        
+        let sumExpected = 0, sumCollected = 0, sumRemaining = 0;
+        let html = '';
+
+        data.forEach(item => {
+          const tong = Number(item.TongDoanhThu) || 0;
+          const dathu = Number(item.DaThu) || 0;
+          const conlai = tong - dathu;
+
+          sumExpected += tong;
+          sumCollected += dathu;
+          sumRemaining += conlai;
+
+          let badgeColor = 'bg-yellow-100 text-yellow-800';
+          if (conlai <= 0) badgeColor = 'bg-green-100 text-green-800';
+          else if (dathu > 0) badgeColor = 'bg-blue-100 text-blue-800';
+
+          html += `
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+              <div class="flex justify-between items-start mb-2">
+                <div>
+                  <h4 class="font-bold text-gray-900">${item.KhachHang}</h4>
+                  <p class="text-xs text-gray-400">Hạn thu: ${item.NgayDuKien || 'Chưa lịch'}</p>
+                </div>
+                <span class="text-xs px-2 py-1 rounded-full font-medium ${badgeColor}">${item.TrangThai}</span>
+              </div>
+              <div class="grid grid-cols-3 gap-1 text-xs bg-gray-50 p-2 rounded-lg my-2">
+                <div><span class="text-gray-400 block">Tổng:</span> <b>${formatVND(tong)}</b></div>
+                <div><span class="text-gray-400 block">Đã thu:</span> <b class="text-green-600">${formatVND(dathu)}</b></div>
+                <div><span class="text-gray-400 block">Còn lại:</span> <b class="text-red-500">${formatVND(conlai)}</b></div>
+              </div>
+              <button onclick="updateCollected('${item.ID}', ${dathu})" class="w-full text-center text-xs text-blue-600 py-1 font-medium hover:bg-blue-50 rounded mt-1 border border-blue-100">
+                ✏️ Cập nhật số tiền lũy kế đã thu
+              </button>
+            </div>
+          `;
+        });
+
+        document.getElementById('totalExpected').innerText = formatVND(sumExpected);
+        document.getElementById('totalCollected').innerText = formatVND(sumCollected);
+        document.getElementById('totalRemaining').innerText = formatVND(sumRemaining);
+        document.getElementById('listContainer').innerHTML = html || '<p class="text-center text-gray-400 py-6">Chưa có dữ liệu</p>';
+      } catch (err) {
+        document.getElementById('listContainer').innerHTML = '<p class="text-center text-red-500 py-6">Lỗi tải dữ liệu. Vui lòng kiểm tra lại URL API!</p>';
+      }
+    }
+
+    function openModal() { document.getElementById('addModal').classList.remove('hidden'); document.getElementById('addModal').classList.add('flex'); }
+    function closeModal() { document.getElementById('addModal').classList.add('hidden'); document.getElementById('addModal').classList.remove('flex'); }
+
+    async function submitNew() {
+      const payload = {
+        action: 'add',
+        KhachHang: document.getElementById('inpKhachHang').value,
+        TongDoanhThu: document.getElementById('inpTong').value,
+        DaThu: document.getElementById('inpDaThu').value,
+        NgayDuKien: document.getElementById('inpNgay').value,
+        GhiChu: document.getElementById('inpGhiChu').value
+      };
+      closeModal();
+      document.getElementById('listContainer').innerHTML = '<p class="text-center text-gray-400 py-6">Đang lưu dữ liệu...</p>';
+      await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+      loadData();
+    }
+
+    async function updateCollected(id, currentDaThu) {
+      const newVal = prompt("Nhập tổng số tiền LŨY KẾ ĐÃ THU từ khách hàng này (VNĐ):", currentDaThu);
+      if (newVal !== null) {
+        document.getElementById('listContainer').innerHTML = '<p class="text-center text-gray-400 py-6">Đang cập nhật...</p>';
+        await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'updateDaThu', id: id, DaThu: newVal })
+        });
+        loadData();
+      }
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
