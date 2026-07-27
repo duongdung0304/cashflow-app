@@ -11,19 +11,9 @@
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2382/2382533.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Chống phóng to/thu nhỏ trên Safari iOS */
-    body {
-      touch-action: manipulation;
-      -webkit-user-select: none;
-      user-select: none;
-    }
-    input, textarea {
-      -webkit-user-select: auto;
-      user-select: auto;
-    }
-    #pullIndicator {
-      transition: opacity 0.2s, transform 0.2s;
-    }
+    body { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+    input, textarea { -webkit-user-select: auto; user-select: auto; }
+    #pullIndicator { transition: opacity 0.2s, transform 0.2s; }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen text-gray-800 p-4 pb-20">
@@ -39,21 +29,21 @@
     </div>
     <div class="flex gap-2">
       <button onclick="loadData()" class="bg-white border border-gray-200 text-gray-700 px-2.5 py-1.5 rounded-lg text-sm font-medium shadow-sm active:scale-95">🔄</button>
-      <button onclick="openModal()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium shadow active:scale-95">+ Thêm mới</button>
+      <button onclick="openAddModal()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium shadow active:scale-95">+ Thêm mới</button>
     </div>
   </div>
 
   <div class="grid grid-cols-3 gap-2 mb-4">
     <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 text-center">
-      <p class="text-xs text-gray-500 font-medium">Tổng Dự Kiến</p>
+      <p class="text-[11px] text-gray-500 font-medium">Tổng Dự Kiến</p>
       <p id="totalExpected" class="text-xs sm:text-sm font-bold text-blue-600 mt-1">0 đ</p>
     </div>
     <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 text-center">
-      <p class="text-xs text-gray-500 font-medium">Lũy Kế Đã Thu</p>
+      <p class="text-[11px] text-gray-500 font-medium">Lũy Kế Đã Thu</p>
       <p id="totalCollected" class="text-xs sm:text-sm font-bold text-green-600 mt-1">0 đ</p>
     </div>
     <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 text-center">
-      <p class="text-xs text-gray-500 font-medium">Còn Phải Thu</p>
+      <p class="text-[11px] text-gray-500 font-medium">Còn Phải Thu</p>
       <p id="totalRemaining" class="text-xs sm:text-sm font-bold text-red-500 mt-1">0 đ</p>
     </div>
   </div>
@@ -62,19 +52,20 @@
     <p class="text-center text-gray-400 py-6">Đang tải dữ liệu...</p>
   </div>
 
-  <div id="addModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
+  <!-- Modal Thêm/Sửa Tích Hợp -->
+  <div id="dataModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl p-5 w-full max-w-sm space-y-3">
-      <h3 class="text-lg font-bold">Thêm Khoản Thu Mới</h3>
+      <h3 id="modalTitle" class="text-lg font-bold">Thêm Khoản Thu Mới</h3>
       <input id="inpKhachHang" type="text" placeholder="Tên khách hàng / Dự án" class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-      
-      <input id="inpTong" type="text" inputmode="numeric" oninput="formatInputMoney(this)" placeholder="Tổng doanh thu dự kiến (VNĐ)" class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <input id="inpDaThu" type="text" inputmode="numeric" oninput="formatInputMoney(this)" placeholder="Đã thu trước (VNĐ) - Nếu có" class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-      
+      <div class="grid grid-cols-2 gap-2">
+        <input id="inpTong" type="text" inputmode="numeric" oninput="formatInputMoney(this)" placeholder="Tổng thu (VNĐ)" class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input id="inpDaThu" type="text" inputmode="numeric" oninput="formatInputMoney(this)" placeholder="Đã thu (VNĐ)" class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
       <input id="inpNgay" type="date" class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-      <input id="inpGhiChu" type="text" placeholder="Ghi chú" class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <input id="inpGhiChu" type="text" placeholder="Ghi chú (Tùy chọn)" class="w-full border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
       <div class="flex justify-end space-x-2 pt-2">
-        <button onclick="closeModal()" class="px-4 py-2 text-sm text-gray-500">Hủy</button>
-        <button onclick="submitNew()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg">Lưu</button>
+        <button onclick="closeModal()" class="px-4 py-2 text-sm text-gray-500 bg-gray-100 rounded-lg">Hủy</button>
+        <button onclick="submitData()" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg shadow">Lưu Dữ Liệu</button>
       </div>
     </div>
   </div>
@@ -83,43 +74,42 @@
     // ⚠️ THAY THẾ DÒNG DƯỚI BẰNG URL APPS SCRIPT CỦA BẠN:
     const API_URL = "https://script.google.com/macros/s/AKfycbwKP3dMqD78s4EpNjsP3xuCpe8ymDQ59GRxBZ-BfeybMrVejQFW5XKXhEFPjJWeCC-JCg/exec";
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js');
-    }
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 
-    // Định dạng hiển thị số tiền có dấu phẩy ','
+    let appData = []; // Biến toàn cục lưu dữ liệu
+    let currentEditId = null; // Biến xác định trạng thái Thêm hay Sửa
+    let isFetching = false;
+
     function formatVND(num) {
       if (isNaN(num) || num === null || num === undefined) return '0 đ';
       return Number(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + ' đ';
     }
 
-    // Tự động định dạng dấu phẩy ',' ngay khi gõ trong ô Input
     function formatInputMoney(input) {
       let value = input.value.replace(/,/g, '').replace(/\D/g, '');
-      if (value) {
-        input.value = Number(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-      } else {
-        input.value = '';
-      }
+      input.value = value ? Number(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '';
     }
 
-    // Chuyển chuỗi có dấu phẩy ',' thành số nguyên thuần túy để lưu vào database
+    function forceFormatMoney(val) {
+      if (!val) return '';
+      let value = val.toString().replace(/,/g, '').replace(/\D/g, '');
+      return value ? Number(value).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '';
+    }
+
     function parseMoneyValue(str) {
       if (!str) return 0;
       return Number(str.toString().replace(/,/g, '')) || 0;
     }
 
-    let isFetching = false;
-
     async function loadData(isBackground = false) {
       if (isFetching) return;
       isFetching = true;
-
       const syncDot = document.getElementById('syncStatus');
 
       try {
         const res = await fetch(API_URL);
         const data = await res.json();
+        appData = data; // Lưu dữ liệu vào biến toàn cục để dùng cho tính năng Sửa
         
         let sumExpected = 0, sumCollected = 0, sumRemaining = 0;
         let html = '';
@@ -140,20 +130,27 @@
           html += `
             <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
               <div class="flex justify-between items-start mb-2">
-                <div>
-                  <h4 class="font-bold text-gray-900">${item.KhachHang || 'Chưa đặt tên'}</h4>
-                  <p class="text-xs text-gray-400">Hạn thu: ${item.NgayDuKien || 'Chưa lịch'}</p>
+                <div class="pr-2">
+                  <h4 class="font-bold text-gray-900 truncate">${item.KhachHang || 'Chưa đặt tên'}</h4>
+                  <p class="text-xs text-gray-400 mt-0.5">Hạn thu: ${item.NgayDuKien || 'Chưa có'}</p>
                 </div>
-                <span class="text-xs px-2 py-1 rounded-full font-medium ${badgeColor}">${item.TrangThai || 'Chờ thu'}</span>
+                <span class="text-[10px] whitespace-nowrap px-2 py-1 rounded-full font-bold ${badgeColor}">${item.TrangThai || 'Chờ thu'}</span>
               </div>
-              <div class="grid grid-cols-3 gap-1 text-xs bg-gray-50 p-2 rounded-lg my-2">
-                <div><span class="text-gray-400 block">Tổng:</span> <b>${formatVND(tong)}</b></div>
-                <div><span class="text-gray-400 block">Đã thu:</span> <b class="text-green-600">${formatVND(dathu)}</b></div>
-                <div><span class="text-gray-400 block">Còn lại:</span> <b class="text-red-500">${formatVND(conlai)}</b></div>
+              
+              <div class="grid grid-cols-3 gap-1 text-xs bg-gray-50 p-2 rounded-lg my-2 border border-gray-100">
+                <div><span class="text-gray-400 block text-[10px] uppercase">Tổng</span> <b class="text-gray-700">${formatVND(tong)}</b></div>
+                <div><span class="text-gray-400 block text-[10px] uppercase">Đã thu</span> <b class="text-green-600">${formatVND(dathu)}</b></div>
+                <div><span class="text-gray-400 block text-[10px] uppercase">Còn lại</span> <b class="text-red-500">${formatVND(conlai)}</b></div>
               </div>
-              <button onclick="updateCollected('${item.ID}', ${dathu})" class="w-full text-center text-xs text-blue-600 py-1.5 font-medium hover:bg-blue-50 rounded-lg mt-1 border border-blue-100">
-                ✏️ Cập nhật số tiền lũy kế đã thu
-              </button>
+              
+              <div class="flex gap-2 mt-2">
+                <button onclick="updateCollected('${item.ID}', ${dathu})" class="flex-1 text-center text-[11px] text-blue-600 py-2 font-bold hover:bg-blue-50 rounded-lg border border-blue-100 transition-colors">
+                  ✏️ Nhập Cấp Tốc
+                </button>
+                <button onclick="openEditModal('${item.ID}')" class="flex-1 text-center text-[11px] text-gray-600 py-2 font-bold hover:bg-gray-50 rounded-lg border border-gray-200 transition-colors">
+                  ⚙️ Sửa Toàn Bộ
+                </button>
+              </div>
             </div>
           `;
         });
@@ -165,44 +162,72 @@
         
         if (syncDot) syncDot.className = 'w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse';
       } catch (err) {
-        if (!isBackground) {
-          document.getElementById('listContainer').innerHTML = '<p class="text-center text-red-500 py-6">Lỗi tải dữ liệu. Vui lòng kiểm tra lại kết nối!</p>';
-        }
+        if (!isBackground) document.getElementById('listContainer').innerHTML = '<p class="text-center text-red-500 py-6">Lỗi tải dữ liệu. Vui lòng kiểm tra kết nối!</p>';
         if (syncDot) syncDot.className = 'w-2.5 h-2.5 rounded-full bg-red-500';
       } finally {
         isFetching = false;
       }
     }
 
-    function openModal() { document.getElementById('addModal').classList.remove('hidden'); document.getElementById('addModal').classList.add('flex'); }
-    function closeModal() { 
-      document.getElementById('addModal').classList.add('hidden'); 
-      document.getElementById('addModal').classList.remove('flex');
+    // Mở Form Thêm Mới
+    function openAddModal() { 
+      currentEditId = null;
+      document.getElementById('modalTitle').innerText = 'Thêm Khoản Thu Mới';
+      clearModalInputs();
+      toggleModal(true);
+    }
+
+    // Mở Form Sửa Thông Tin
+    function openEditModal(id) {
+      currentEditId = id;
+      const item = appData.find(x => x.ID === id);
+      if (!item) return;
+
+      document.getElementById('modalTitle').innerText = 'Chỉnh Sửa Dữ Liệu';
+      document.getElementById('inpKhachHang').value = item.KhachHang || '';
+      document.getElementById('inpTong').value = forceFormatMoney(item.TongDoanhThu);
+      document.getElementById('inpDaThu').value = forceFormatMoney(item.DaThu);
+      document.getElementById('inpNgay').value = item.NgayDuKien || '';
+      document.getElementById('inpGhiChu').value = item.GhiChu || '';
+      
+      toggleModal(true);
+    }
+
+    function closeModal() { toggleModal(false); }
+    function clearModalInputs() {
       document.getElementById('inpKhachHang').value = '';
       document.getElementById('inpTong').value = '';
       document.getElementById('inpDaThu').value = '';
       document.getElementById('inpNgay').value = '';
       document.getElementById('inpGhiChu').value = '';
     }
+    function toggleModal(show) {
+      const modal = document.getElementById('dataModal');
+      if(show) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+      else { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+    }
 
-    async function submitNew() {
+    // Gộp chung hàm Submit cho cả Thêm và Sửa
+    async function submitData() {
       const payload = {
-        action: 'add',
+        action: currentEditId ? 'edit' : 'add',
+        id: currentEditId,
         KhachHang: document.getElementById('inpKhachHang').value,
         TongDoanhThu: parseMoneyValue(document.getElementById('inpTong').value),
         DaThu: parseMoneyValue(document.getElementById('inpDaThu').value),
         NgayDuKien: document.getElementById('inpNgay').value,
         GhiChu: document.getElementById('inpGhiChu').value
       };
+      
       closeModal();
-      document.getElementById('listContainer').innerHTML = '<p class="text-center text-gray-400 py-6">Đang lưu dữ liệu...</p>';
+      document.getElementById('listContainer').innerHTML = '<p class="text-center text-gray-400 py-6">Đang lưu hệ thống...</p>';
       await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
       loadData();
     }
 
     async function updateCollected(id, currentDaThu) {
       const formattedCurrent = Number(currentDaThu).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-      const newValStr = prompt("Nhập tổng số tiền LŨY KẾ ĐÃ THU từ khách hàng này (VNĐ):", formattedCurrent);
+      const newValStr = prompt("Nhập TỔNG TIỀN ĐÃ THU từ khách hàng này (VNĐ):", formattedCurrent);
       if (newValStr !== null) {
         const newVal = parseMoneyValue(newValStr);
         document.getElementById('listContainer').innerHTML = '<p class="text-center text-gray-400 py-6">Đang cập nhật...</p>';
@@ -214,55 +239,30 @@
       }
     }
 
-    // TỰ ĐỘNG ĐỒNG BỘ 2 CHIỀU MỖI 5 GIÂY (CHẠY NGẦM)
-    setInterval(() => {
-      loadData(true);
-    }, 5000);
+    setInterval(() => { loadData(true); }, 5000);
 
-    // BỘ XỬ LÝ SỰ KIỆN VUỐT XUỐNG ĐỂ TẢI LẠI (PULL-TO-REFRESH CỦA IOS)
-    let startY = 0;
-    let pullDistance = 0;
+    let startY = 0, pullDistance = 0;
     const pullIndicator = document.getElementById('pullIndicator');
     const pullText = document.getElementById('pullText');
 
-    window.addEventListener('touchstart', (e) => {
-      if (window.scrollY === 0) {
-        startY = e.touches[0].clientY;
-      }
-    }, { passive: true });
-
+    window.addEventListener('touchstart', (e) => { if (window.scrollY === 0) startY = e.touches[0].clientY; }, { passive: true });
     window.addEventListener('touchmove', (e) => {
       if (startY > 0 && window.scrollY === 0) {
-        const currentY = e.touches[0].clientY;
-        pullDistance = currentY - startY;
+        pullDistance = e.touches[0].clientY - startY;
         if (pullDistance > 0) {
-          const opacity = Math.min(pullDistance / 80, 1);
-          pullIndicator.style.opacity = opacity;
-          if (pullDistance > 80) {
-            pullText.innerText = "Thả ra để làm mới!";
-          } else {
-            pullText.innerText = "Kéo xuống để tải lại...";
-          }
+          pullIndicator.style.opacity = Math.min(pullDistance / 80, 1);
+          pullText.innerText = pullDistance > 80 ? "Thả ra để làm mới!" : "Kéo xuống để tải lại...";
         }
       }
     }, { passive: true });
-
     window.addEventListener('touchend', () => {
       if (pullDistance > 80) {
         pullText.innerText = "Đang tải lại...";
-        loadData().then(() => {
-          setTimeout(() => {
-            pullIndicator.style.opacity = '0';
-          }, 400);
-        });
-      } else {
-        pullIndicator.style.opacity = '0';
-      }
-      startY = 0;
-      pullDistance = 0;
+        loadData().then(() => { setTimeout(() => pullIndicator.style.opacity = '0', 400); });
+      } else { pullIndicator.style.opacity = '0'; }
+      startY = 0; pullDistance = 0;
     });
 
-    // Tải dữ liệu ban đầu
     loadData();
   </script>
 </body>
