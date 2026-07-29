@@ -14,7 +14,6 @@
     body { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
     input, textarea { -webkit-user-select: auto; user-select: auto; }
     #pullIndicator { transition: opacity 0.2s, transform 0.2s; }
-    /* Đảm bảo vùng cố định có bóng đổ nhẹ để phân cách với danh sách trượt bên dưới */
     .sticky-header { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
   </style>
 </head>
@@ -24,10 +23,7 @@
     <span>🔄</span> <span id="pullText">Kéo xuống để tải lại...</span>
   </div>
 
-  <!-- VÙNG CỐ ĐỊNH (STICKY) KHI CUỘN -->
   <div class="sticky top-0 z-40 bg-gray-100 px-4 pt-4 pb-3 sticky-header">
-    
-    <!-- Header -->
     <div class="flex justify-between items-center mb-4">
       <div class="flex items-center gap-2">
         <h1 class="text-xl font-black text-gray-900">Dòng Tiền Dự Kiến</h1>
@@ -39,7 +35,6 @@
       </div>
     </div>
 
-    <!-- Dashboard Summary Cards -->
     <div class="grid grid-cols-3 gap-2 mb-4">
       <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 text-center">
         <p class="text-[11px] text-gray-500 font-bold">Tổng Dự Kiến</p>
@@ -55,7 +50,6 @@
       </div>
     </div>
 
-    <!-- Thanh tìm kiếm -->
     <div class="relative">
       <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
         <span class="text-gray-400 font-bold">🔍</span>
@@ -63,14 +57,12 @@
       <input id="searchInput" type="text" oninput="filterList()" placeholder="Tìm kiếm theo tên, dự án..." class="w-full font-bold text-gray-800 bg-white border border-gray-200 rounded-xl py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all">
     </div>
   </div>
-  <!-- KẾT THÚC VÙNG CỐ ĐỊNH -->
 
-  <!-- Danh sách giao dịch -->
   <div class="px-4 mt-4 space-y-3" id="listContainer">
     <p class="text-center text-gray-400 font-bold py-6">Đang tải dữ liệu...</p>
   </div>
 
-  <!-- Modal Thêm/Sửa Tích Hợp -->
+  <!-- Modal Thêm/Sửa -->
   <div id="dataModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl p-5 w-full max-w-sm space-y-3">
       <h3 id="modalTitle" class="text-lg font-black text-gray-900">Thêm Khoản Thu Mới</h3>
@@ -89,7 +81,7 @@
   </div>
 
   <script>
-    // ⚠️ THAY THẾ DÒNG DƯỚI BẰNG URL APPS SCRIPT CỦA BẠN:
+    // ⚠️ ĐIỀN URL CỦA BẠN VÀO ĐÂY:
     const API_URL = "https://script.google.com/macros/s/AKfycbwKP3dMqD78s4EpNjsP3xuCpe8ymDQ59GRxBZ-BfeybMrVejQFW5XKXhEFPjJWeCC-JCg/exec";
 
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
@@ -98,20 +90,34 @@
     let currentEditId = null; 
     let isFetching = false;
 
-    // Hiển thị số tiền
+    // --- BỘ XỬ LÝ NGÀY THÁNG CHUẨN HÓA (VÁ LỖI BUG DATE) ---
+    function normalizeDateString(dateStr) {
+      if (!dateStr) return '';
+      let str = String(dateStr).trim();
+      if (str.includes('T')) str = str.split('T')[0]; // Lọc bỏ múi giờ nếu có
+      if (str.includes('/')) { // Chuyển DD/MM/YYYY thành YYYY-MM-DD
+        let p = str.split('/');
+        if (p.length === 3) return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+      }
+      if (str.includes('-')) { // Giữ nguyên YYYY-MM-DD và cắt bớt ký tự thừa
+        let p = str.split('-');
+        if (p.length >= 3) return `${p[0]}-${p[1].padStart(2,'0')}-${p[2].substring(0,2).padStart(2,'0')}`;
+      }
+      return str; 
+    }
+
+    function formatDateVN(dateStr) {
+      let norm = normalizeDateString(dateStr);
+      if (!norm) return 'Chưa có';
+      let p = norm.split('-');
+      if (p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
+      return norm;
+    }
+    // --------------------------------------------------------
+
     function formatVND(num) {
       if (isNaN(num) || num === null || num === undefined) return '0 đ';
       return Number(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + ' đ';
-    }
-
-    // Chuyển đổi định dạng Năm-Tháng-Ngày (YYYY-MM-DD) sang Ngày/Tháng/Năm (DD/MM/YYYY)
-    function formatDateVN(dateStr) {
-      if (!dateStr) return 'Chưa có';
-      const parts = dateStr.split('-'); // Cắt chuỗi theo dấu trừ
-      if (parts.length === 3) {
-        return `${parts[2]}/${parts[1]}/${parts[0]}`; // Đảo lại vị trí
-      }
-      return dateStr;
     }
 
     function formatInputMoney(input) {
@@ -130,10 +136,8 @@
       return Number(str.toString().replace(/,/g, '')) || 0;
     }
 
-    // Tách hàm Render HTML
     function renderList(dataToRender) {
       let html = '';
-      
       if (dataToRender.length === 0) {
         document.getElementById('listContainer').innerHTML = '<p class="text-center font-bold text-gray-400 py-6">Không tìm thấy dữ liệu</p>';
         return;
@@ -179,24 +183,19 @@
       document.getElementById('listContainer').innerHTML = html;
     }
 
-    // Hàm Lọc dữ liệu theo tên Khách Hàng
     function filterList() {
       const searchText = document.getElementById('searchInput').value.toLowerCase().trim();
-      
       if (!searchText) {
         renderList(appData);
         return;
       }
-
       const filteredData = appData.filter(item => {
         const tenKhachHang = (item.KhachHang || '').toLowerCase();
         return tenKhachHang.includes(searchText);
       });
-
       renderList(filteredData);
     }
 
-    // Hàm Tải Dữ Liệu từ Server và Tự Động Sắp Xếp
     async function loadData(isBackground = false) {
       if (isFetching) return;
       isFetching = true;
@@ -206,12 +205,13 @@
         const res = await fetch(API_URL);
         const data = await res.json();
         
-        // --- SẮP XẾP DỮ LIỆU ---
-        // Sắp xếp theo ngày dự kiến: Gần nhất lên đầu, xa nhất xuống dưới. Các mục chưa có ngày đẩy xuống cuối cùng.
+        // Sắp xếp ngày tháng đã được vá lỗi
         data.sort((a, b) => {
-          if (!a.NgayDuKien) return 1; 
-          if (!b.NgayDuKien) return -1;
-          return new Date(a.NgayDuKien) - new Date(b.NgayDuKien);
+          let dA = normalizeDateString(a.NgayDuKien);
+          let dB = normalizeDateString(b.NgayDuKien);
+          if (!dA) return 1; 
+          if (!dB) return -1;
+          return new Date(dA) - new Date(dB);
         });
 
         appData = data; 
@@ -231,7 +231,6 @@
         document.getElementById('totalRemaining').innerText = formatVND(sumRemaining);
         
         filterList();
-        
         if (syncDot) syncDot.className = 'w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse';
       } catch (err) {
         if (!isBackground) document.getElementById('listContainer').innerHTML = '<p class="text-center font-bold text-red-500 py-6">Lỗi tải dữ liệu. Vui lòng kiểm tra kết nối!</p>';
@@ -249,6 +248,12 @@
     }
 
     function openEditModal(id) {
+      // VÁ LỖI BUG ID (Ngăn chặn mở nhầm mục B)
+      if (!id || id === 'undefined' || id.trim() === '') {
+        alert('⚠️ LỖI TRỐNG ID!\n\nKhoản thu này không có mã ID ở Cột A trong Google Sheets. Vui lòng mở Google Sheets bằng máy tính/điện thoại, gõ một mã bất kỳ (Ví dụ: TXN001) vào Cột A của dòng này thì mới có thể sửa được!');
+        return;
+      }
+
       currentEditId = id;
       const item = appData.find(x => x.ID === id);
       if (!item) return;
@@ -257,7 +262,7 @@
       document.getElementById('inpKhachHang').value = item.KhachHang || '';
       document.getElementById('inpTong').value = forceFormatMoney(item.TongDoanhThu);
       document.getElementById('inpDaThu').value = forceFormatMoney(item.DaThu);
-      document.getElementById('inpNgay').value = item.NgayDuKien || '';
+      document.getElementById('inpNgay').value = normalizeDateString(item.NgayDuKien);
       document.getElementById('inpGhiChu').value = item.GhiChu || '';
       
       toggleModal(true);
@@ -299,6 +304,10 @@
     }
 
     async function updateCollected(id, currentDaThu) {
+      if (!id || id === 'undefined' || id.trim() === '') {
+        alert('⚠️ LỖI TRỐNG ID!\n\nVui lòng mở Google Sheets và điền mã ID vào Cột A cho khoản thu này trước khi nhập tiền.');
+        return;
+      }
       const formattedCurrent = Number(currentDaThu).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
       const newValStr = prompt("Nhập TỔNG TIỀN ĐÃ THU từ khách hàng này (VNĐ):", formattedCurrent);
       if (newValStr !== null) {
