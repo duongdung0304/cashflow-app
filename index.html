@@ -17,49 +17,70 @@
     .sticky-header { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
   </style>
 </head>
-<body class="bg-gray-100 min-h-screen text-gray-800 pb-20">
+<body class="bg-gray-100 min-h-screen text-gray-800">
 
-  <div id="pullIndicator" class="fixed top-2 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs px-3 py-1.5 rounded-full shadow-lg opacity-0 pointer-events-none z-50 flex items-center gap-1">
-    <span>🔄</span> <span id="pullText">Kéo xuống để tải lại...</span>
-  </div>
-
-  <div class="sticky top-0 z-40 bg-gray-100 px-4 pt-4 pb-3 sticky-header">
-    <div class="flex justify-between items-center mb-4">
-      <div class="flex items-center gap-2">
-        <h1 class="text-xl font-black text-gray-900">Dòng Tiền Dự Kiến</h1>
-        <span id="syncStatus" class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" title="Đồng bộ tự động"></span>
-      </div>
-      <div class="flex gap-2">
-        <button onclick="loadData()" class="bg-white border border-gray-200 text-gray-700 px-2.5 py-1.5 rounded-lg text-sm font-bold shadow-sm active:scale-95">🔄</button>
-        <button onclick="openAddModal()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow active:scale-95">+ Thêm mới</button>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-3 gap-2 mb-4">
-      <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 text-center">
-        <p class="text-[11px] text-gray-500 font-bold">Tổng Dự Kiến</p>
-        <p id="totalExpected" class="text-[13px] sm:text-sm font-black text-blue-600 mt-1">0 đ</p>
-      </div>
-      <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 text-center">
-        <p class="text-[11px] text-gray-500 font-bold">Lũy Kế Đã Thu</p>
-        <p id="totalCollected" class="text-[13px] sm:text-sm font-black text-green-600 mt-1">0 đ</p>
-      </div>
-      <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 text-center">
-        <p class="text-[11px] text-gray-500 font-bold">Còn Phải Thu</p>
-        <p id="totalRemaining" class="text-[13px] sm:text-sm font-black text-red-500 mt-1">0 đ</p>
-      </div>
-    </div>
-
-    <div class="relative">
-      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <span class="text-gray-400 font-bold">🔍</span>
-      </div>
-      <input id="searchInput" type="text" oninput="filterList()" placeholder="Tìm kiếm theo tên, dự án..." class="w-full font-bold text-gray-800 bg-white border border-gray-200 rounded-xl py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all">
+  <!-- ================= MÀN HÌNH KHÓA MÃ PIN ================= -->
+  <div id="loginScreen" class="fixed inset-0 bg-gray-100 z-[9999] flex flex-col items-center justify-center px-4">
+    <div class="bg-white p-6 rounded-3xl shadow-lg w-full max-w-sm text-center border border-gray-200">
+      <div class="text-5xl mb-4">🔐</div>
+      <h2 class="text-xl font-black text-gray-900 mb-1">Mã Bảo Mật</h2>
+      <p class="text-[13px] text-gray-500 mb-6 font-bold">Vui lòng nhập mã PIN để truy cập dòng tiền.</p>
+      
+      <input id="pinInput" type="password" inputmode="numeric" maxlength="6" class="w-full text-center text-3xl tracking-[0.5em] font-black border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4 bg-gray-50 transition-all" placeholder="••••••">
+      
+      <button onclick="checkPin()" class="w-full bg-gray-900 text-white font-black py-3.5 rounded-xl shadow active:scale-95 transition-transform">MỞ KHÓA</button>
+      <p id="pinError" class="text-red-500 text-[13px] font-bold mt-3 hidden bg-red-50 py-2 rounded-lg">❌ Mã PIN không chính xác!</p>
     </div>
   </div>
+  <!-- ======================================================== -->
 
-  <div class="px-4 mt-4 space-y-3" id="listContainer">
-    <p class="text-center text-gray-400 font-bold py-6">Đang tải dữ liệu...</p>
+
+  <!-- NỘI DUNG APP CHÍNH (Sẽ bị ẩn cho đến khi nhập đúng PIN) -->
+  <div id="appContent" class="hidden pb-20">
+    <div id="pullIndicator" class="fixed top-2 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs px-3 py-1.5 rounded-full shadow-lg opacity-0 pointer-events-none z-50 flex items-center gap-1">
+      <span>🔄</span> <span id="pullText">Kéo xuống để tải lại...</span>
+    </div>
+
+    <div class="sticky top-0 z-40 bg-gray-100 px-4 pt-4 pb-3 sticky-header">
+      <div class="flex justify-between items-center mb-4">
+        <div class="flex items-center gap-2">
+          <h1 class="text-xl font-black text-gray-900">Dòng Tiền</h1>
+          <span id="syncStatus" class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" title="Đồng bộ tự động"></span>
+        </div>
+        <div class="flex gap-2">
+          <!-- Nút Khóa App Chủ động -->
+          <button onclick="lockApp()" class="bg-red-50 border border-red-200 text-red-600 px-2.5 py-1.5 rounded-lg text-sm font-black shadow-sm active:scale-95">🔒</button>
+          <button onclick="loadData()" class="bg-white border border-gray-200 text-gray-700 px-2.5 py-1.5 rounded-lg text-sm font-bold shadow-sm active:scale-95">🔄</button>
+          <button onclick="openAddModal()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow active:scale-95">+ Thêm</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 mb-4">
+        <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 text-center">
+          <p class="text-[11px] text-gray-500 font-bold">Tổng Dự Kiến</p>
+          <p id="totalExpected" class="text-[13px] sm:text-sm font-black text-blue-600 mt-1">0 đ</p>
+        </div>
+        <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 text-center">
+          <p class="text-[11px] text-gray-500 font-bold">Lũy Kế Đã Thu</p>
+          <p id="totalCollected" class="text-[13px] sm:text-sm font-black text-green-600 mt-1">0 đ</p>
+        </div>
+        <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 text-center">
+          <p class="text-[11px] text-gray-500 font-bold">Còn Phải Thu</p>
+          <p id="totalRemaining" class="text-[13px] sm:text-sm font-black text-red-500 mt-1">0 đ</p>
+        </div>
+      </div>
+
+      <div class="relative">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <span class="text-gray-400 font-bold">🔍</span>
+        </div>
+        <input id="searchInput" type="text" oninput="filterList()" placeholder="Tìm kiếm theo tên, dự án..." class="w-full font-bold text-gray-800 bg-white border border-gray-200 rounded-xl py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all">
+      </div>
+    </div>
+
+    <div class="px-4 mt-4 space-y-3" id="listContainer">
+      <p class="text-center text-gray-400 font-bold py-6">Đang tải dữ liệu...</p>
+    </div>
   </div>
 
   <!-- Modal Thêm/Sửa -->
@@ -81,7 +102,10 @@
   </div>
 
   <script>
-    // ⚠️ ĐIỀN URL CỦA BẠN VÀO ĐÂY:
+    // ⚠️ 1. ĐỔI MÃ PIN CỦA BẠN TẠI ĐÂY (Mặc định: 123456)
+    const SECRET_PIN = "160297"; 
+
+    // ⚠️ 2. ĐIỀN URL CỦA BẠN VÀO ĐÂY:
     const API_URL = "https://script.google.com/macros/s/AKfycbwKP3dMqD78s4EpNjsP3xuCpe8ymDQ59GRxBZ-BfeybMrVejQFW5XKXhEFPjJWeCC-JCg/exec";
 
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
@@ -90,16 +114,51 @@
     let currentEditId = null; 
     let isFetching = false;
 
-    // --- BỘ XỬ LÝ NGÀY THÁNG CHUẨN HÓA (VÁ LỖI BUG DATE) ---
+    // --- HỆ THỐNG BẢO MẬT (MÃ PIN) ---
+    function checkPin() {
+      const input = document.getElementById('pinInput').value;
+      if (input === SECRET_PIN) {
+        sessionStorage.setItem('isUnlocked', 'true');
+        document.getElementById('pinError').classList.add('hidden');
+        document.getElementById('pinInput').value = '';
+        unlockApp();
+      } else {
+        document.getElementById('pinError').classList.remove('hidden');
+        document.getElementById('pinInput').value = '';
+        document.getElementById('pinInput').focus();
+      }
+    }
+
+    function unlockApp() {
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('appContent').classList.remove('hidden');
+      // Chỉ tải dữ liệu khi đã nhập đúng mã PIN
+      loadData();
+    }
+
+    function lockApp() {
+      sessionStorage.removeItem('isUnlocked');
+      document.getElementById('appContent').classList.add('hidden');
+      document.getElementById('loginScreen').classList.remove('hidden');
+      // Xóa sạch dữ liệu cũ trên màn hình để chống nhìn trộm
+      document.getElementById('listContainer').innerHTML = ''; 
+    }
+
+    // Lắng nghe sự kiện Enter khi nhập PIN
+    document.getElementById('pinInput').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') checkPin();
+    });
+
+    // --- CÁC HÀM XỬ LÝ NGÀY THÁNG & TIỀN TỆ ---
     function normalizeDateString(dateStr) {
       if (!dateStr) return '';
       let str = String(dateStr).trim();
-      if (str.includes('T')) str = str.split('T')[0]; // Lọc bỏ múi giờ nếu có
-      if (str.includes('/')) { // Chuyển DD/MM/YYYY thành YYYY-MM-DD
+      if (str.includes('T')) str = str.split('T')[0];
+      if (str.includes('/')) {
         let p = str.split('/');
         if (p.length === 3) return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
       }
-      if (str.includes('-')) { // Giữ nguyên YYYY-MM-DD và cắt bớt ký tự thừa
+      if (str.includes('-')) {
         let p = str.split('-');
         if (p.length >= 3) return `${p[0]}-${p[1].padStart(2,'0')}-${p[2].substring(0,2).padStart(2,'0')}`;
       }
@@ -113,7 +172,6 @@
       if (p.length === 3) return `${p[2]}/${p[1]}/${p[0]}`;
       return norm;
     }
-    // --------------------------------------------------------
 
     function formatVND(num) {
       if (isNaN(num) || num === null || num === undefined) return '0 đ';
@@ -197,6 +255,9 @@
     }
 
     async function loadData(isBackground = false) {
+      // Ngăn không cho load dữ liệu ngầm nếu app đang bị khóa
+      if (sessionStorage.getItem('isUnlocked') !== 'true') return;
+
       if (isFetching) return;
       isFetching = true;
       const syncDot = document.getElementById('syncStatus');
@@ -205,7 +266,6 @@
         const res = await fetch(API_URL);
         const data = await res.json();
         
-        // Sắp xếp ngày tháng đã được vá lỗi
         data.sort((a, b) => {
           let dA = normalizeDateString(a.NgayDuKien);
           let dB = normalizeDateString(b.NgayDuKien);
@@ -217,7 +277,6 @@
         appData = data; 
         
         let sumExpected = 0, sumCollected = 0, sumRemaining = 0;
-
         data.forEach(item => {
           const tong = Number(item.TongDoanhThu) || 0;
           const dathu = Number(item.DaThu) || 0;
@@ -248,9 +307,8 @@
     }
 
     function openEditModal(id) {
-      // VÁ LỖI BUG ID (Ngăn chặn mở nhầm mục B)
       if (!id || id === 'undefined' || id.trim() === '') {
-        alert('⚠️ LỖI TRỐNG ID!\n\nKhoản thu này không có mã ID ở Cột A trong Google Sheets. Vui lòng mở Google Sheets bằng máy tính/điện thoại, gõ một mã bất kỳ (Ví dụ: TXN001) vào Cột A của dòng này thì mới có thể sửa được!');
+        alert('⚠️ LỖI TRỐNG ID!\n\nKhoản thu này không có mã ID ở Cột A trong Google Sheets. Vui lòng mở Google Sheets, gõ một mã bất kỳ (Ví dụ: TXN001) vào Cột A của dòng này thì mới có thể sửa được!');
         return;
       }
 
@@ -297,7 +355,6 @@
       
       closeModal();
       document.getElementById('searchInput').value = ''; 
-
       document.getElementById('listContainer').innerHTML = '<p class="text-center font-bold text-gray-400 py-6">Đang lưu hệ thống...</p>';
       await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
       loadData();
@@ -345,7 +402,13 @@
       startY = 0; pullDistance = 0;
     });
 
-    loadData();
+    // --- KHỞI ĐỘNG APP KHI VỪA MỞ LÊN ---
+    if (sessionStorage.getItem('isUnlocked') === 'true') {
+      unlockApp(); // Nếu đã nhập mã trước đó (chưa tắt hẳn app), cho vào thẳng
+    } else {
+      // Ngược lại, chỉ hiển thị Màn hình khóa, không load dữ liệu
+    }
+
   </script>
 </body>
 </html>
