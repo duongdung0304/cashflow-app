@@ -15,24 +15,12 @@
     input, textarea, select { -webkit-user-select: auto; user-select: auto; }
     #pullIndicator { transition: opacity 0.2s, transform 0.2s; }
     .sticky-header { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-    
-    /* CSS DÀNH RIÊNG CHO CHẾ ĐỘ XUẤT PDF (IN ẤN) */
-    @media print {
-      body { background: #fff; padding: 0; font-family: sans-serif; }
-      .no-print { display: none !important; }
-      #listContainer { margin-top: 0; }
-      .shadow-sm { box-shadow: none; border: 1px solid #ddd; }
-      #appContent::before {
-        content: "BÁO CÁO CÔNG NỢ DỰ ÁN";
-        display: block; font-size: 22px; font-weight: 900; text-align: center; margin: 20px 0; color: #111;
-      }
-    }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen text-gray-800">
 
   <!-- MÀN HÌNH KHÓA -->
-  <div id="loginScreen" class="fixed inset-0 bg-gray-100 z-[9999] flex flex-col items-center justify-center px-4 no-print">
+  <div id="loginScreen" class="fixed inset-0 bg-gray-100 z-[9999] flex flex-col items-center justify-center px-4">
     <div class="bg-white p-6 rounded-3xl shadow-lg w-full max-w-sm text-center border border-gray-200">
       <div class="text-5xl mb-4">🔐</div>
       <h2 class="text-xl font-black text-gray-900 mb-1">Mã Bảo Mật</h2>
@@ -45,15 +33,15 @@
 
   <!-- NỘI DUNG APP -->
   <div id="appContent" class="hidden pb-20">
-    <div id="pullIndicator" class="fixed top-2 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs px-3 py-1.5 rounded-full shadow-lg opacity-0 pointer-events-none z-50 flex items-center gap-1 no-print">
+    <div id="pullIndicator" class="fixed top-2 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs px-3 py-1.5 rounded-full shadow-lg opacity-0 pointer-events-none z-50 flex items-center gap-1">
       <span>🔄</span> <span id="pullText">Kéo xuống để tải lại...</span>
     </div>
 
-    <!-- VÙNG CỐ ĐỊNH (Không in phần này ra PDF trừ số tổng) -->
-    <div class="sticky top-0 z-40 bg-gray-100 px-4 pt-4 pb-3 sticky-header print:static print:bg-white print:p-0">
+    <!-- VÙNG CỐ ĐỊNH -->
+    <div class="sticky top-0 z-40 bg-gray-100 px-4 pt-4 pb-3 sticky-header">
       
-      <!-- Thanh công cụ (Ẩn khi in) -->
-      <div class="flex justify-between items-center mb-4 no-print">
+      <!-- Thanh công cụ -->
+      <div class="flex justify-between items-center mb-4">
         <div class="flex items-center gap-2">
           <h1 class="text-xl font-black text-gray-900">Dòng Tiền</h1>
           <span id="syncStatus" class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse"></span>
@@ -65,7 +53,7 @@
         </div>
       </div>
 
-      <!-- Dashboard hiển thị chung và khi in -->
+      <!-- Dashboard hiển thị -->
       <div class="grid grid-cols-3 gap-2 mb-3">
         <div class="bg-white p-3 rounded-xl shadow-sm border border-gray-100 text-center">
           <p class="text-[11px] text-gray-500 font-bold">Tổng Dự Kiến</p>
@@ -81,8 +69,8 @@
         </div>
       </div>
 
-      <!-- Thanh Tìm Kiếm, Lọc & Xuất báo cáo (Ẩn khi in) -->
-      <div class="space-y-2 no-print">
+      <!-- Thanh Tìm Kiếm, Lọc Dự Án -->
+      <div class="space-y-2">
         <div class="relative">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <span class="text-gray-400 font-bold">🔍</span>
@@ -94,18 +82,19 @@
             <option value="">📋 Tất cả dự án</option>
             <!-- Sẽ đổ dữ liệu tự động vào đây -->
           </select>
-          <button onclick="clearFilter()" class="bg-gray-200 text-gray-600 px-3 py-2 rounded-xl text-sm font-bold active:scale-95" title="Xóa lọc">❌</button>
-            </div>
+          <button onclick="clearFilter()" class="bg-gray-200 text-gray-600 px-4 py-2 rounded-xl text-sm font-bold active:scale-95 flex items-center gap-1" title="Xóa lọc">❌ Xóa lọc</button>
+        </div>
+      </div>
     </div>
 
     <!-- Danh sách giao dịch -->
-    <div class="px-4 mt-4 space-y-3 print:px-0" id="listContainer">
+    <div class="px-4 mt-4 space-y-3" id="listContainer">
       <p class="text-center text-gray-400 font-bold py-6">Đang tải dữ liệu...</p>
     </div>
   </div>
 
-  <!-- Modal Thêm/Sửa (Ẩn khi in) -->
-  <div id="dataModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50 no-print">
+  <!-- Modal Thêm/Sửa -->
+  <div id="dataModal" class="fixed inset-0 bg-black/50 hidden items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl p-5 w-full max-w-sm space-y-3">
       <h3 id="modalTitle" class="text-lg font-black text-gray-900">Thêm Khoản Thu Mới</h3>
       <input id="inpKhachHang" type="text" placeholder="Tên khách hàng / Đối tác" class="w-full font-bold border rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -131,10 +120,10 @@
     // ⚠️ 2. ĐIỀN URL CỦA BẠN VÀO ĐÂY:
     const API_URL = "https://script.google.com/macros/s/AKfycbwKP3dMqD78s4EpNjsP3xuCpe8ymDQ59GRxBZ-BfeybMrVejQFW5XKXhEFPjJWeCC-JCg/exec";
 
+
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
 
     let appData = []; 
-    let currentFilteredData = []; // Lưu trữ mảng đang được lọc để Xuất Báo Cáo
     let currentEditId = null; 
     let isFetching = false;
 
@@ -173,9 +162,8 @@
     // --- TỰ ĐỘNG CẬP NHẬT DANH SÁCH DỰ ÁN VÀO BỘ LỌC ---
     function updateProjectDropdown() {
       const select = document.getElementById('projectFilter');
-      const currentSelection = select.value; // Giữ nguyên lựa chọn hiện tại của người dùng
+      const currentSelection = select.value; 
       
-      // Lấy danh sách các dự án duy nhất từ data (loại bỏ khoảng trắng thừa)
       const projects = [...new Set(appData.map(item => item.DuAn).filter(p => p && p.trim() !== ''))].sort();
       
       let html = '<option value="">📋 Tất cả dự án</option>';
@@ -200,15 +188,15 @@
       });
       
       updateProjectDropdown();
-      filterList(); // Bản thân hàm filterList sẽ tính tổng luôn dựa trên danh sách đã lọc
+      filterList();
     }
 
-    // --- HÀM LỌC KÉP & TÍNH TỔNG (Lọc theo Tên và Dự án) ---
+    // --- HÀM LỌC KÉP & TÍNH TỔNG ---
     function filterList() {
       const searchText = document.getElementById('searchInput').value.toLowerCase().trim();
       const filterProject = document.getElementById('projectFilter').value;
 
-      currentFilteredData = appData.filter(item => {
+      let currentFilteredData = appData.filter(item => {
         const tenKhachHang = (item.KhachHang || '').toLowerCase();
         const tenDuAn = (item.DuAn || '');
         const matchSearch = tenKhachHang.includes(searchText);
@@ -216,7 +204,6 @@
         return matchSearch && matchProject;
       });
 
-      // 1. Tính tổng trên mảng ĐANG ĐƯỢC LỌC (để báo cáo trực quan)
       let sumExpected = 0, sumCollected = 0, sumRemaining = 0;
       currentFilteredData.forEach(item => {
         const tong = Number(item.TongDoanhThu) || 0;
@@ -227,7 +214,6 @@
       document.getElementById('totalCollected').innerText = formatVND(sumCollected);
       document.getElementById('totalRemaining').innerText = formatVND(sumRemaining);
 
-      // 2. Vẽ UI
       renderList(currentFilteredData);
     }
 
@@ -244,23 +230,23 @@
         if (conlai <= 0) badgeColor = 'bg-green-100 text-green-800'; else if (dathu > 0) badgeColor = 'bg-blue-100 text-blue-800';
 
         html += `
-          <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 print:mb-2 print:p-2 print:shadow-none">
+          <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
             <div class="flex justify-between items-start mb-2">
               <div class="pr-2">
                 <h4 class="text-base font-black text-gray-900">${item.KhachHang || 'Chưa đặt tên'}</h4>
                 <p class="text-[12px] font-bold text-blue-700 mt-0.5">Dự án: ${item.DuAn || 'Chung'}</p>
                 <p class="text-[12px] font-bold text-gray-500 mt-0.5">Hạn thu: <span class="text-gray-800">${formatDateVN(item.NgayDuKien)}</span></p>
               </div>
-              <span class="text-[11px] whitespace-nowrap px-2.5 py-1 rounded-full font-black ${badgeColor} print:border print:border-gray-400">${item.TrangThai || 'Chờ thu'}</span>
+              <span class="text-[11px] whitespace-nowrap px-2.5 py-1 rounded-full font-black ${badgeColor}">${item.TrangThai || 'Chờ thu'}</span>
             </div>
             
-            <div class="grid grid-cols-3 gap-1 text-[13px] bg-gray-50 p-2.5 rounded-lg my-2 border border-gray-200 print:bg-white">
+            <div class="grid grid-cols-3 gap-1 text-[13px] bg-gray-50 p-2.5 rounded-lg my-2 border border-gray-200">
               <div><span class="text-gray-500 block text-[10px] font-bold uppercase">Tổng</span> <b class="text-gray-900 font-black">${formatVND(tong)}</b></div>
               <div><span class="text-gray-500 block text-[10px] font-bold uppercase">Đã thu</span> <b class="text-green-600 font-black">${formatVND(dathu)}</b></div>
               <div><span class="text-gray-500 block text-[10px] font-bold uppercase">Còn lại</span> <b class="text-red-600 font-black">${formatVND(conlai)}</b></div>
             </div>
             
-            <div class="flex gap-2 mt-3 no-print">
+            <div class="flex gap-2 mt-3">
               <button onclick="updateCollected('${item.ID}', ${dathu})" class="flex-1 text-center text-[12px] text-blue-700 py-2.5 font-black hover:bg-blue-50 rounded-lg border border-blue-200">✏️ Nhập Cấp Tốc</button>
               <button onclick="openEditModal('${item.ID}')" class="flex-1 text-center text-[12px] text-gray-700 py-2.5 font-black hover:bg-gray-50 rounded-lg border border-gray-300">⚙️ Sửa Toàn Bộ</button>
             </div>
@@ -268,37 +254,6 @@
         `;
       });
       document.getElementById('listContainer').innerHTML = html;
-    }
-
-    // --- TÍNH NĂNG XUẤT BÁO CÁO ---
-    function exportCSV() {
-      if(currentFilteredData.length === 0) return alert("Không có dữ liệu để xuất!");
-      // Thêm BOM ( \uFEFF ) để Excel đọc tiếng Việt không bị lỗi Font
-      let csvContent = "\uFEFFMã GD,Khách Hàng,Dự Án,Tổng Thu,Đã Thu,Còn Lại,Ngày Hạn,Trạng Thái,Ghi Chú\n";
-      
-      currentFilteredData.forEach(item => {
-        const tong = Number(item.TongDoanhThu) || 0;
-        const dathu = Number(item.DaThu) || 0;
-        const conlai = tong - dathu;
-        const date = formatDateVN(item.NgayDuKien);
-        
-        // Đóng ngoặc kép để xử lý chuỗi có chứa dấu phẩy
-        csvContent += `"${item.ID}","${item.KhachHang || ''}","${item.DuAn || ''}",${tong},${dathu},${conlai},"${date}","${item.TrangThai || ''}","${item.GhiChu || ''}"\n`;
-      });
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", `BaoCao_CongNo_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    function exportPDF() {
-      // Gọi lệnh in của trình duyệt. Trên Safari iPhone, chọn Share -> "Save to Files" hoặc "Lưu dưới dạng PDF"
-      window.print();
     }
 
     // --- LOAD DỮ LIỆU ---
@@ -349,7 +304,6 @@
       document.getElementById('inpNgay').value = '';
       document.getElementById('inpGhiChu').value = '';
       
-      // Mẹo: Tự điền sẵn tên Dự án nếu bộ lọc đang chọn sẵn 1 dự án
       const filterValue = document.getElementById('projectFilter').value;
       if(filterValue) document.getElementById('inpDuAn').value = filterValue;
     }
@@ -369,7 +323,6 @@
       
       closeModal();
       
-      // Tối ưu hóa UI: Cập nhật tức thì
       if (currentEditId) {
         const index = appData.findIndex(x => x.ID === currentEditId);
         if (index !== -1) {
