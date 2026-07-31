@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Quản Lý</title>
+  <title>Quản Lý Doanh Thu</title>
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -24,7 +24,7 @@
     <div class="bg-white p-6 rounded-3xl shadow-lg w-full max-w-sm text-center border border-gray-200">
       <div class="text-5xl mb-4">🔐</div>
       <h2 class="text-xl font-black text-gray-900 mb-1">Mã Bảo Mật</h2>
-      <p class="text-[13px] text-gray-500 mb-6 font-bold">Vui lòng nhập mã PIN.</p>
+      <p class="text-[13px] text-gray-500 mb-6 font-bold">Vui lòng nhập mã PIN để truy cập dòng tiền.</p>
       
       <input id="pinInput" type="password" inputmode="numeric" maxlength="6" class="w-full text-center text-3xl tracking-[0.5em] font-black border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4 bg-gray-50 transition-all" placeholder="••••••">
       
@@ -35,7 +35,7 @@
   <!-- ======================================================== -->
 
 
-  <!-- NỘI DUNG APP CHÍNH (Sẽ bị ẩn cho đến khi nhập đúng PIN) -->
+  <!-- NỘI DUNG APP CHÍNH -->
   <div id="appContent" class="hidden pb-20">
     <div id="pullIndicator" class="fixed top-2 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs px-3 py-1.5 rounded-full shadow-lg opacity-0 pointer-events-none z-50 flex items-center gap-1">
       <span>🔄</span> <span id="pullText">Kéo xuống để tải lại...</span>
@@ -45,10 +45,10 @@
       <div class="flex justify-between items-center mb-4">
         <div class="flex items-center gap-2">
           <h1 class="text-xl font-black text-gray-900">Dòng Tiền</h1>
+          <!-- Chấm báo trạng thái: Xanh (OK), Vàng (Đang lưu ngầm), Đỏ (Lỗi) -->
           <span id="syncStatus" class="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" title="Đồng bộ tự động"></span>
         </div>
         <div class="flex gap-2">
-          <!-- Nút Khóa App Chủ động -->
           <button onclick="lockApp()" class="bg-red-50 border border-red-200 text-red-600 px-2.5 py-1.5 rounded-lg text-sm font-black shadow-sm active:scale-95">🔒</button>
           <button onclick="loadData()" class="bg-white border border-gray-200 text-gray-700 px-2.5 py-1.5 rounded-lg text-sm font-bold shadow-sm active:scale-95">🔄</button>
           <button onclick="openAddModal()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold shadow active:scale-95">+ Thêm</button>
@@ -102,7 +102,7 @@
   </div>
 
   <script>
-    // ⚠️ 1. ĐỔI MÃ PIN CỦA BẠN TẠI ĐÂY (Mặc định: 160297)
+     // ⚠️ 1. ĐỔI MÃ PIN CỦA BẠN TẠI ĐÂY (Mặc định: 160297)
     const SECRET_PIN = "160297"; 
 
     // ⚠️ 2. ĐIỀN URL CỦA BẠN VÀO ĐÂY:
@@ -114,7 +114,7 @@
     let currentEditId = null; 
     let isFetching = false;
 
-    // --- HỆ THỐNG BẢO MẬT (MÃ PIN) ---
+    // --- BẢO MẬT MÃ PIN ---
     function checkPin() {
       const input = document.getElementById('pinInput').value;
       if (input === SECRET_PIN) {
@@ -132,7 +132,6 @@
     function unlockApp() {
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('appContent').classList.remove('hidden');
-      // Chỉ tải dữ liệu khi đã nhập đúng mã PIN
       loadData();
     }
 
@@ -140,16 +139,14 @@
       sessionStorage.removeItem('isUnlocked');
       document.getElementById('appContent').classList.add('hidden');
       document.getElementById('loginScreen').classList.remove('hidden');
-      // Xóa sạch dữ liệu cũ trên màn hình để chống nhìn trộm
       document.getElementById('listContainer').innerHTML = ''; 
     }
 
-    // Lắng nghe sự kiện Enter khi nhập PIN
     document.getElementById('pinInput').addEventListener('keypress', function (e) {
       if (e.key === 'Enter') checkPin();
     });
 
-    // --- CÁC HÀM XỬ LÝ NGÀY THÁNG & TIỀN TỆ ---
+    // --- CÔNG CỤ ĐỊNH DẠNG ---
     function normalizeDateString(dateStr) {
       if (!dateStr) return '';
       let str = String(dateStr).trim();
@@ -192,6 +189,35 @@
     function parseMoneyValue(str) {
       if (!str) return 0;
       return Number(str.toString().replace(/,/g, '')) || 0;
+    }
+
+    // --- LÕI CẬP NHẬT GIAO DIỆN CHUNG ---
+    function updateDashboardAndRender() {
+      // 1. Tự động sắp xếp
+      appData.sort((a, b) => {
+        let dA = normalizeDateString(a.NgayDuKien);
+        let dB = normalizeDateString(b.NgayDuKien);
+        if (!dA) return 1; 
+        if (!dB) return -1;
+        return new Date(dA) - new Date(dB);
+      });
+
+      // 2. Tự động cộng tổng
+      let sumExpected = 0, sumCollected = 0, sumRemaining = 0;
+      appData.forEach(item => {
+        const tong = Number(item.TongDoanhThu) || 0;
+        const dathu = Number(item.DaThu) || 0;
+        sumExpected += tong;
+        sumCollected += dathu;
+        sumRemaining += (tong - dathu);
+      });
+
+      // 3. Đổ ra màn hình
+      document.getElementById('totalExpected').innerText = formatVND(sumExpected);
+      document.getElementById('totalCollected').innerText = formatVND(sumCollected);
+      document.getElementById('totalRemaining').innerText = formatVND(sumRemaining);
+      
+      filterList(); // Vẽ lại danh sách
     }
 
     function renderList(dataToRender) {
@@ -254,42 +280,21 @@
       renderList(filteredData);
     }
 
+    // --- LOAD DỮ LIỆU TỪ NGUỒN ---
     async function loadData(isBackground = false) {
-      // Ngăn không cho load dữ liệu ngầm nếu app đang bị khóa
       if (sessionStorage.getItem('isUnlocked') !== 'true') return;
-
       if (isFetching) return;
       isFetching = true;
+      
       const syncDot = document.getElementById('syncStatus');
 
       try {
         const res = await fetch(API_URL);
-        const data = await res.json();
+        appData = await res.json();
         
-        data.sort((a, b) => {
-          let dA = normalizeDateString(a.NgayDuKien);
-          let dB = normalizeDateString(b.NgayDuKien);
-          if (!dA) return 1; 
-          if (!dB) return -1;
-          return new Date(dA) - new Date(dB);
-        });
-
-        appData = data; 
+        // Gọi chung hàm xử lý giao diện
+        updateDashboardAndRender();
         
-        let sumExpected = 0, sumCollected = 0, sumRemaining = 0;
-        data.forEach(item => {
-          const tong = Number(item.TongDoanhThu) || 0;
-          const dathu = Number(item.DaThu) || 0;
-          sumExpected += tong;
-          sumCollected += dathu;
-          sumRemaining += (tong - dathu);
-        });
-
-        document.getElementById('totalExpected').innerText = formatVND(sumExpected);
-        document.getElementById('totalCollected').innerText = formatVND(sumCollected);
-        document.getElementById('totalRemaining').innerText = formatVND(sumRemaining);
-        
-        filterList();
         if (syncDot) syncDot.className = 'w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse';
       } catch (err) {
         if (!isBackground) document.getElementById('listContainer').innerHTML = '<p class="text-center font-bold text-red-500 py-6">Lỗi tải dữ liệu. Vui lòng kiểm tra kết nối!</p>';
@@ -299,6 +304,7 @@
       }
     }
 
+    // --- FORM THÊM / SỬA ---
     function openAddModal() { 
       currentEditId = null;
       document.getElementById('modalTitle').innerText = 'Thêm Khoản Thu Mới';
@@ -308,10 +314,9 @@
 
     function openEditModal(id) {
       if (!id || id === 'undefined' || id.trim() === '') {
-        alert('⚠️ LỖI TRỐNG ID!\n\nKhoản thu này không có mã ID ở Cột A trong Google Sheets. Vui lòng mở Google Sheets, gõ một mã bất kỳ (Ví dụ: TXN001) vào Cột A của dòng này thì mới có thể sửa được!');
+        alert('⚠️ LỖI TRỐNG ID!\n\nKhoản thu này không có mã ID ở Cột A trong Google Sheets. Vui lòng mở Google Sheets điền ID trước.');
         return;
       }
-
       currentEditId = id;
       const item = appData.find(x => x.ID === id);
       if (!item) return;
@@ -342,7 +347,8 @@
       else { modal.classList.add('hidden'); modal.classList.remove('flex'); }
     }
 
-    async function submitData() {
+    // --- LƯU THÔNG TIN (OPTIMISTIC UI) ---
+    function submitData() {
       const payload = {
         action: currentEditId ? 'edit' : 'add',
         id: currentEditId,
@@ -355,29 +361,80 @@
       
       closeModal();
       document.getElementById('searchInput').value = ''; 
-      document.getElementById('listContainer').innerHTML = '<p class="text-center font-bold text-gray-400 py-6">Đang lưu hệ thống...</p>';
-      await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
-      loadData();
+
+      // 1. CẬP NHẬT GIAO DIỆN TỨC THÌ LÊN MÀN HÌNH MÁY BẠN
+      if (currentEditId) {
+        const index = appData.findIndex(x => x.ID === currentEditId);
+        if (index !== -1) {
+          appData[index].KhachHang = payload.KhachHang;
+          appData[index].TongDoanhThu = payload.TongDoanhThu;
+          appData[index].DaThu = payload.DaThu;
+          appData[index].NgayDuKien = payload.NgayDuKien;
+          appData[index].GhiChu = payload.GhiChu;
+          const conlai = payload.TongDoanhThu - payload.DaThu;
+          appData[index].TrangThai = conlai <= 0 ? 'Đã hoàn thành' : (payload.DaThu > 0 ? 'Thu một phần' : 'Chờ thu');
+        }
+      } else {
+        const newItem = {
+          ID: 'TEMP_' + Date.now(), // Tạo ID tạm thời
+          KhachHang: payload.KhachHang,
+          TongDoanhThu: payload.TongDoanhThu,
+          DaThu: payload.DaThu,
+          NgayDuKien: payload.NgayDuKien,
+          GhiChu: payload.GhiChu,
+          TrangThai: (payload.TongDoanhThu - payload.DaThu <= 0) ? 'Đã hoàn thành' : (payload.DaThu > 0 ? 'Thu một phần' : 'Chờ thu')
+        };
+        appData.push(newItem);
+      }
+      
+      updateDashboardAndRender(); // Gọi tính toán và vẽ lại màn hình ngay!
+
+      // 2. GỬI LÊN MÁY CHỦ GOOGLE SHEETS Ở CHẾ ĐỘ CHẠY NGẦM
+      const syncDot = document.getElementById('syncStatus');
+      if (syncDot) syncDot.className = 'w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse'; // Đổi đèn vàng
+
+      fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) })
+        .then(() => {
+          loadData(true); // Gửi xong thì load lại ngầm một lần nữa để chốt dữ liệu chuẩn
+        })
+        .catch(() => { 
+          if(syncDot) syncDot.className = 'w-2.5 h-2.5 rounded-full bg-red-500'; // Đổi đèn đỏ nếu lỗi mạng
+        });
     }
 
-    async function updateCollected(id, currentDaThu) {
+    // --- CẬP NHẬT NHANH SỐ ĐÃ THU (OPTIMISTIC UI) ---
+    function updateCollected(id, currentDaThu) {
       if (!id || id === 'undefined' || id.trim() === '') {
-        alert('⚠️ LỖI TRỐNG ID!\n\nVui lòng mở Google Sheets và điền mã ID vào Cột A cho khoản thu này trước khi nhập tiền.');
+        alert('⚠️ LỖI TRỐNG ID!\n\nVui lòng mở Google Sheets và điền mã ID vào Cột A.');
         return;
       }
       const formattedCurrent = Number(currentDaThu).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
       const newValStr = prompt("Nhập TỔNG TIỀN ĐÃ THU từ khách hàng này (VNĐ):", formattedCurrent);
+      
       if (newValStr !== null) {
         const newVal = parseMoneyValue(newValStr);
-        document.getElementById('listContainer').innerHTML = '<p class="text-center font-bold text-gray-400 py-6">Đang cập nhật...</p>';
-        await fetch(API_URL, {
+        
+        // 1. CẬP NHẬT GIAO DIỆN TỨC THÌ
+        const index = appData.findIndex(x => x.ID === id);
+        if (index !== -1) {
+          appData[index].DaThu = newVal;
+          const conlai = appData[index].TongDoanhThu - newVal;
+          appData[index].TrangThai = conlai <= 0 ? 'Đã hoàn thành' : (newVal > 0 ? 'Thu một phần' : 'Chờ thu');
+        }
+        updateDashboardAndRender();
+
+        // 2. CHẠY NGẦM LÊN GOOGLE SHEETS
+        const syncDot = document.getElementById('syncStatus');
+        if (syncDot) syncDot.className = 'w-2.5 h-2.5 rounded-full bg-yellow-500 animate-pulse';
+
+        fetch(API_URL, {
           method: 'POST',
           body: JSON.stringify({ action: 'updateDaThu', id: id, DaThu: newVal })
-        });
-        loadData();
+        }).then(() => loadData(true)).catch(() => { if(syncDot) syncDot.className = 'w-2.5 h-2.5 rounded-full bg-red-500'; });
       }
     }
 
+    // --- CÁC TÁC VỤ KHÁC ---
     setInterval(() => { loadData(true); }, 5000);
 
     let startY = 0, pullDistance = 0;
@@ -402,13 +459,9 @@
       startY = 0; pullDistance = 0;
     });
 
-    // --- KHỞI ĐỘNG APP KHI VỪA MỞ LÊN ---
     if (sessionStorage.getItem('isUnlocked') === 'true') {
-      unlockApp(); // Nếu đã nhập mã trước đó (chưa tắt hẳn app), cho vào thẳng
-    } else {
-      // Ngược lại, chỉ hiển thị Màn hình khóa, không load dữ liệu
+      unlockApp();
     }
-
   </script>
 </body>
 </html>
